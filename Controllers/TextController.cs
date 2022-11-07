@@ -26,7 +26,7 @@ namespace Text_Processor_Web_API_Rest.Controllers
         // GET: TextController/OrderOptions
         public IActionResult OrderOptions(TextViewModel model)
         {
-            model.SortingOptionsList = SortingOptions.GetAll();
+            PopulateDropdownList(model);
 
             //Deliver the list of Order Options
             return View();
@@ -34,7 +34,7 @@ namespace Text_Processor_Web_API_Rest.Controllers
 
         /// <summary>
         /// Recover all words of the string and sort them based on the received sort option
-        /// there are 3 types of sorting (AlphabeticAsc, AlphabeticDesc, LenghtAsc)
+        /// There are 3 types of sorting (AlphabeticAsc, AlphabeticDesc, LenghtAsc)
         /// Deliver a list of ordered words as a result
         /// </summary>
         /// <param name="model"></param>
@@ -43,40 +43,54 @@ namespace Text_Processor_Web_API_Rest.Controllers
         [HttpPost]
         public IActionResult OrderText(TextViewModel model)
         {
-            model.SortingOptionsList = SortingOptions.GetAll();
+            PopulateDropdownList(model);
 
-            var selectedOption = model.SelectedSortingOption;
-            List<string> ListString = model.TextToSort.Split(' ').ToList();
-            var sortedList = new List<string>();
-            sortedList = SortText(selectedOption, ListString);
-
-            model.SortedText = String.Join(" ", sortedList.ToArray());
+            if(CheckSortingConditions(model))
+            {
+                var sortedList = SortText(model);
+                model.SortedText = String.Join(" ", sortedList.ToArray());
+            }
 
             return View(nameof(Index), model);
         }
 
-        private static List<string> SortText(string selectedOption, List<string> ListString)
+        private bool CheckSortingConditions(TextViewModel model)
         {
+            if (model.SelectedSortingOption == "noSorting" || string.IsNullOrEmpty(model.TextToSort))
+            {
+                model.SortedText = "Please select a sorting option and/or write text to sort";
+                return false;
+            }
+            return true;
+        }
+
+        public List<string> SortText(TextViewModel model)
+        {
+            if (!CheckSortingConditions(model))
+                return new List<string>();
+
+            List<string> listString = model.TextToSort.Split(' ').ToList();
             List<string> sortedList;
-            if (selectedOption == SortingOptions.SortingOptionType.AlphabeticAsc.ToString())
+            if (model.SelectedSortingOption == SortingOptions.SortingOptionType.AlphabeticAsc.ToString())
             {
-                sortedList = ListString.OrderBy(x => x).ToList();
+                sortedList = listString.OrderBy(x => x).ToList();
             }
-            else if (selectedOption == SortingOptions.SortingOptionType.AlphabeticDesc.ToString())
+            else if (model.SelectedSortingOption == SortingOptions.SortingOptionType.AlphabeticDesc.ToString())
             {
-                sortedList = ListString.OrderByDescending(x => x).ToList();
+                sortedList = listString.OrderByDescending(x => x).ToList();
             }
-            else if (selectedOption == SortingOptions.SortingOptionType.LengthAsc.ToString())
+            else if (model.SelectedSortingOption == SortingOptions.SortingOptionType.LengthAsc.ToString())
             {
-                sortedList = ListString.OrderBy(x => x.Length).ToList();
+                sortedList = listString.OrderBy(x => x.Length).ToList();
             }
             else
             {
-                sortedList = ListString;
+                sortedList = listString;
             }
 
             return sortedList;
         }
+
         /// <summary>
         /// Returning a json complex POCO object called TextStatistics with text statistics
         /// of hyphens quantity, word quantity, spaces quantity
@@ -87,21 +101,24 @@ namespace Text_Processor_Web_API_Rest.Controllers
         [HttpPost]
         public IActionResult AnalyzeText(TextViewModel model)
         {
-            var wordCount = GetWordCount(model.SortedText);
-            var hyphensCount = GetCharCount(model, '-');
-            var spacesCount = GetCharCount(model, ' ');
-
-            var analyzedText = new AnalyzeText
+            if(model != null)
             {
-                words = wordCount,
-                hyphens = hyphensCount,
-                spaces = spacesCount
-            };
+                var wordCount = GetWordCount(model.SortedText);
+                var hyphensCount = GetCharCount(model, '-');
+                var spacesCount = GetCharCount(model, ' ');
 
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonString = JsonSerializer.Serialize(analyzedText, options);
+                var analyzedText = new AnalyzeText
+                {
+                    words = wordCount,
+                    hyphens = hyphensCount,
+                    spaces = spacesCount
+                };
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string jsonString = JsonSerializer.Serialize(analyzedText, options);
 
-            Console.WriteLine(jsonString);
+                Console.WriteLine(jsonString);
+                model.AnalyzedText = jsonString;
+            }
 
             return View(nameof(Index), model);
         }
@@ -113,12 +130,15 @@ namespace Text_Processor_Web_API_Rest.Controllers
 
         public int GetWordCount(string txtToCount)
         {
+            if (string.IsNullOrEmpty(txtToCount))
+                return 0;
+
             string pattern = "\\w+";
             Regex regex = new Regex(pattern);
 
-            int CountedWords = regex.Matches(txtToCount).Count;
+            int countedWords = regex.Matches(txtToCount).Count;
 
-            return CountedWords;
+            return countedWords;
         }
     }
 }
