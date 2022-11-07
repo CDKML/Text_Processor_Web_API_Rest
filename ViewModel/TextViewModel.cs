@@ -13,5 +13,6 @@ namespace Text_Processor_Web_API_Rest.ViewModel
 
         public string TextToSort { get; set; }
         public string SortedText { get; set; }
+        public string AnalyzedText { get; set; }
     }
 }
