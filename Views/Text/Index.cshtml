@@ -1,0 +1,29 @@
+﻿@model Text_Processor_Web_API_Rest.ViewModel.TextVM
+@{ ViewData["Title"] = "Text Processor";
+    Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+<h3 class="text-center">Process text</h3>
+<form asp-controller="Text" asp-action="OrderText" method="post">
+
+    <div class="mb-3">
+        @Html.TextBoxFor(model => model.TextToSort)
+        <br />
+        <select class="form-select" asp-items="Model.SortingOptionsList" asp-for="SelectedSortingOption">
+            <option value="noSorting">--Please select a sorting type--</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Sort</button>
+    </div>
+</form>
+
+<form asp-controller="Text" asp-action="AnalyzeText" method="post">
+
+    <div class="mb-3">
+        <label class="col-form-label">Result text</label>
+        @Html.TextBoxFor(model => model.SortedText)
+    </div>
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Analyze</button>
+    </div>
+</form>
