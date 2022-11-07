@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Text_Processor_Web_API_Rest.ViewModel
 {
-    public class TextVM
+    public class TextViewModel
     {
         public List<SelectListItem> SortingOptionsList { get; set; }
         public string SelectedSortingOption { get; set; }

@@ -50,7 +50,7 @@ namespace Text_Processor_Web_API_Rest
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Text}/{action=Index}/{id?}");
             });
         }
     }

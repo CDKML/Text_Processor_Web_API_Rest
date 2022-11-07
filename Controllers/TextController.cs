@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Text_Processor_Web_API_Rest.Models;
 using Text_Processor_Web_API_Rest.ViewModel;
 
@@ -10,19 +12,19 @@ namespace Text_Processor_Web_API_Rest.Controllers
     public class TextController : Controller
     {
         // GET: TextController
-        public IActionResult Index(TextVM model)
+        public IActionResult Index(TextViewModel model)
         {
             PopulateDropdownList(model);
             return View(model);
         }
 
-        private static void PopulateDropdownList(TextVM model)
+        private static void PopulateDropdownList(TextViewModel model)
         {
             model.SortingOptionsList = SortingOptions.GetAll();
         }
 
         // GET: TextController/OrderOptions
-        public IActionResult OrderOptions(TextVM model)
+        public IActionResult OrderOptions(TextViewModel model)
         {
             model.SortingOptionsList = SortingOptions.GetAll();
 
@@ -30,9 +32,16 @@ namespace Text_Processor_Web_API_Rest.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Recover all words of the string and sort them based on the received sort option
+        /// there are 3 types of sorting (AlphabeticAsc, AlphabeticDesc, LenghtAsc)
+        /// Deliver a list of ordered words as a result
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         // POST: TextController/OrderText
         [HttpPost]
-        public IActionResult OrderText(TextVM model)
+        public IActionResult OrderText(TextViewModel model)
         {
             model.SortingOptionsList = SortingOptions.GetAll();
 
@@ -42,9 +51,7 @@ namespace Text_Processor_Web_API_Rest.Controllers
             sortedList = SortText(selectedOption, ListString);
 
             model.SortedText = String.Join(" ", sortedList.ToArray());
-            //Should recover all words of the string and sort them based on the received sort option
-            //there are 3 types of sorting (AlphabeticAsc, AlphabeticDesc, LenghtAsc)
-            //Should deliver a list of ordered words as a result
+
             return View(nameof(Index), model);
         }
 
@@ -70,14 +77,48 @@ namespace Text_Processor_Web_API_Rest.Controllers
 
             return sortedList;
         }
-
+        /// <summary>
+        /// Returning a json complex POCO object called TextStatistics with text statistics
+        /// of hyphens quantity, word quantity, spaces quantity
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         // POST: TextController/AnalyzeText
         [HttpPost]
-        public IActionResult AnalyzeText(TextVM model)
+        public IActionResult AnalyzeText(TextViewModel model)
         {
-            //Returning a json complex POCO object called TextStatistics with text statistics
-            //of hyphens quantity, word quantity, spaces quantity
+            var wordCount = GetWordCount(model.SortedText);
+            var hyphensCount = GetCharCount(model, '-');
+            var spacesCount = GetCharCount(model, ' ');
+
+            var analyzedText = new AnalyzeText
+            {
+                words = wordCount,
+                hyphens = hyphensCount,
+                spaces = spacesCount
+            };
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string jsonString = JsonSerializer.Serialize(analyzedText, options);
+
+            Console.WriteLine(jsonString);
+
             return View(nameof(Index), model);
+        }
+
+        private static int GetCharCount(TextViewModel model, char ch)
+        {
+            return model.SortedText.Count(c => c == ch);
+        }
+
+        public int GetWordCount(string txtToCount)
+        {
+            string pattern = "\\w+";
+            Regex regex = new Regex(pattern);
+
+            int CountedWords = regex.Matches(txtToCount).Count;
+
+            return CountedWords;
         }
     }
 }
